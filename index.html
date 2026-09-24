@@ -1,0 +1,708 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0d0f14">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Financial Tracker">
+<link rel="manifest" href="manifest.json">
+<title>💰 Financial Tracker Bulanan</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d0f14; --surface: #161920; --surface2: #1e2230; --border: #2a2f42;
+    --accent: #00e5a0; --accent3: #ffd166; --accent4: #a78bfa;
+    --text: #e8ecf4; --muted: #6b7694; --red: #ff6b6b; --yellow: #ffd166;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'Syne', sans-serif; min-height: 100vh; padding: 20px 14px 70px; }
+
+  .header { text-align: center; margin-bottom: 26px; }
+  .header h1 { font-size: 2rem; font-weight: 800; letter-spacing: -1px; background: linear-gradient(135deg, var(--accent), var(--accent4)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  .header p { color: var(--muted); font-size: 0.78rem; margin-top: 4px; font-family: 'Space Mono', monospace; }
+
+  .month-bar { display: flex; align-items: center; gap: 10px; justify-content: center; margin-bottom: 22px; flex-wrap: wrap; }
+  .month-bar select, .month-bar input[type=number] { background: var(--surface2); border: 1px solid var(--border); color: var(--text); padding: 8px 12px; border-radius: 8px; font-family: 'Space Mono', monospace; font-size: 0.85rem; }
+  .month-bar label { color: var(--muted); font-size: 0.78rem; }
+
+  .balance-bar { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; margin-bottom: 22px; }
+  .bc { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 14px 14px; position: relative; overflow: hidden; }
+  .bc::before { content:''; position:absolute; top:0; left:0; width:100%; height:3px; }
+  .bc.income::before { background: var(--accent); }
+  .bc.spent::before  { background: var(--red); }
+  .bc.rest::before   { background: var(--yellow); }
+  .bc .lbl { font-size: 0.65rem; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }
+  .bc .amt { font-family: 'Space Mono', monospace; font-size: 1rem; font-weight: 700; }
+  .bc.income .amt { color: var(--accent); }
+  .bc.spent .amt  { color: var(--red); }
+  .bc.rest .amt   { color: var(--yellow); }
+  .income-in { background: transparent; border: none; border-bottom: 1px dashed var(--border); color: var(--accent); font-family: 'Space Mono', monospace; font-size: 1rem; font-weight: 700; width: 100%; outline: none; padding: 2px 0; -moz-appearance: textfield; }
+  .income-in::-webkit-outer-spin-button, .income-in::-webkit-inner-spin-button { -webkit-appearance: none; }
+
+  .prog-wrap { margin-bottom: 22px; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; }
+  .prog-lbl { display: flex; justify-content: space-between; font-size: 0.73rem; color: var(--muted); margin-bottom: 8px; }
+  .prog-track { height: 9px; background: var(--surface2); border-radius: 99px; overflow: hidden; }
+  .prog-fill { height: 100%; border-radius: 99px; transition: width .4s; background: linear-gradient(90deg, var(--accent), var(--accent4)); }
+  .prog-fill.danger { background: linear-gradient(90deg, var(--yellow), var(--red)); }
+
+  .sec-title { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 2px; color: var(--muted); margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+  .sec-title::after { content:''; flex:1; height:1px; background: var(--border); }
+
+  .tabs { display: flex; gap: 5px; margin-bottom: 16px; }
+  .tab-btn { flex:1; padding: 8px 2px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface2); color: var(--muted); font-family: 'Syne', sans-serif; font-size: 0.68rem; font-weight: 700; cursor: pointer; text-transform: uppercase; letter-spacing: 0.5px; transition: all .2s; }
+  .tab-btn.active { background: var(--accent); color: #000; border-color: var(--accent); }
+
+  /* DAILY TABLE */
+  .tbl-wrap { overflow-x: auto; border-radius: 12px; border: 1px solid var(--border); margin-bottom: 22px; }
+  table.dt { width: 100%; border-collapse: collapse; font-size: 0.79rem; min-width: 520px; }
+  table.dt th { background: var(--surface2); color: var(--muted); text-transform: uppercase; letter-spacing: 1px; font-size: 0.62rem; padding: 10px 8px; text-align: left; border-bottom: 1px solid var(--border); white-space: nowrap; }
+  table.dt td { padding: 7px 8px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+  table.dt tr.we td { background: rgba(167,139,250,.04); }
+  table.dt tr.td td { background: rgba(0,229,160,.05); }
+  table.dt tr.td td:first-child { border-left: 3px solid var(--accent); }
+  .dlbl { font-weight:700; font-size:.87rem; }
+  .dname { font-size:.63rem; color:var(--muted); }
+  .we-tag { font-size:.58rem; color:var(--accent4); background:rgba(167,139,250,.1); padding:1px 4px; border-radius:3px; }
+  .ni { background:transparent; border:1px solid transparent; border-radius:6px; color:var(--text); font-family:'Space Mono',monospace; font-size:.77rem; width:86px; padding:4px 5px; text-align:right; outline:none; transition:border-color .2s; -moz-appearance:textfield; }
+  .ni::-webkit-outer-spin-button,.ni::-webkit-inner-spin-button { -webkit-appearance:none; }
+  .ni:focus { border-color:var(--accent); background:var(--surface2); }
+  .ni::placeholder { color:var(--border); }
+  .rt { font-family:'Space Mono',monospace; font-weight:700; font-size:.8rem; white-space:nowrap; }
+  .rt.over { color:var(--red); } .rt.ok { color:var(--accent); } .rt.em { color:var(--muted); }
+  .sc { font-family:'Space Mono',monospace; font-size:.73rem; white-space:nowrap; }
+  .sc.pos { color:var(--accent); } .sc.neg { color:var(--red); }
+  .dot { width:8px; height:8px; border-radius:50%; display:inline-block; }
+  .dot.g { background:var(--accent); } .dot.r { background:var(--red); } .dot.x { background:var(--border); }
+
+  .wk-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-bottom:22px; }
+  .wk-card { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:10px 8px; text-align:center; }
+  .wk-card .wl { font-size:.63rem; color:var(--muted); text-transform:uppercase; margin-bottom:4px; }
+  .wk-card .wt { font-family:'Space Mono',monospace; font-size:.83rem; font-weight:700; }
+  .wk-card .wf { font-size:.6rem; color:var(--accent3); margin-top:3px; }
+
+  /* FIXED */
+  .fc-list { display:flex; flex-direction:column; gap:8px; margin-bottom:22px; }
+  .fc-row { display:flex; align-items:center; gap:10px; background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:12px 14px; transition:border-color .2s; cursor:pointer; user-select:none; -webkit-user-select:none; }
+  .fc-row.paid { border-color:var(--accent); }
+  .fc-row.paid .fc-name { text-decoration:line-through; color:var(--muted); }
+  .ck { width:22px; height:22px; border-radius:6px; border:2px solid var(--border); display:flex; align-items:center; justify-content:center; flex-shrink:0; transition:all .2s; font-size:13px; pointer-events:none; }
+  .fc-row.paid .ck { background:var(--accent); border-color:var(--accent); color:#000; }
+  .fc-name { flex:1; font-size:.87rem; font-weight:600; pointer-events:none; }
+  .fc-amt { font-family:'Space Mono',monospace; font-size:.8rem; color:var(--red); font-weight:700; pointer-events:none; }
+  .fc-badge { font-size:.61rem; padding:2px 7px; border-radius:20px; background:var(--surface2); color:var(--muted); border:1px solid var(--border); white-space:nowrap; pointer-events:none; }
+  .fc-row.paid .fc-badge { background:rgba(0,229,160,.1); color:var(--accent); border-color:var(--accent); }
+
+  /* BENSIN */
+  .bs-wrap { background:var(--surface); border:1px solid var(--border); border-radius:12px; margin-bottom:22px; overflow:hidden; }
+  .bs-head { display:flex; align-items:center; justify-content:space-between; padding:12px 14px; border-bottom:1px solid var(--border); }
+  .bs-head .bht { font-size:.85rem; font-weight:700; }
+  .bs-head .bhs { font-size:.65rem; color:var(--muted); margin-top:2px; }
+  .bs-head .bhtot { font-family:'Space Mono',monospace; font-size:.82rem; font-weight:700; }
+  table.bt { width:100%; border-collapse:collapse; font-size:.79rem; }
+  table.bt th { background:var(--surface2); color:var(--muted); font-size:.6rem; text-transform:uppercase; letter-spacing:1px; padding:8px 10px; text-align:left; border-bottom:1px solid var(--border); }
+  table.bt td { padding:7px 8px; border-bottom:1px solid var(--border); vertical-align:middle; }
+  table.bt tr:last-child td { border-bottom:none; }
+  .bti { background:transparent; border:1px solid transparent; border-radius:6px; color:var(--text); font-family:'Space Mono',monospace; font-size:.77rem; padding:4px 6px; outline:none; transition:border-color .2s; width:100%; -moz-appearance:textfield; }
+  .bti::-webkit-outer-spin-button,.bti::-webkit-inner-spin-button { -webkit-appearance:none; }
+  .bti:focus { border-color:var(--accent); background:var(--surface2); }
+  .bti[type=date] { color:var(--text); min-width:120px; }
+  .btn-del { background:none; border:none; color:var(--muted); cursor:pointer; font-size:.95rem; padding:3px 7px; border-radius:4px; transition:color .2s; }
+  .btn-del:hover { color:var(--red); }
+  .btn-add { display:flex; align-items:center; gap:6px; background:none; border:none; color:var(--muted); font-family:'Syne',sans-serif; font-size:.77rem; font-weight:700; cursor:pointer; padding:10px 14px; width:100%; transition:color .2s; border-top:1px solid var(--border); }
+  .btn-add:hover { color:var(--accent); }
+  .bs-bar-wrap { padding:10px 14px; border-top:1px solid var(--border); }
+  .bs-bar-lbl { display:flex; justify-content:space-between; font-size:.68rem; color:var(--muted); margin-bottom:6px; }
+  .bs-bar-track { height:6px; background:var(--surface2); border-radius:99px; overflow:hidden; }
+  .bs-bar-fill { height:100%; border-radius:99px; background:linear-gradient(90deg,var(--accent3),var(--red)); transition:width .4s; }
+
+  /* INSIGHT */
+  .insight { background:rgba(0,229,160,.04); border:1px solid rgba(0,229,160,.14); border-radius:12px; padding:14px 16px; margin-bottom:22px; }
+  .insight .it { font-size:.67rem; text-transform:uppercase; letter-spacing:1px; color:var(--accent); margin-bottom:8px; }
+  .ii { display:flex; align-items:flex-start; gap:8px; font-size:.79rem; color:var(--text); margin-bottom:5px; }
+
+  /* SUMMARY */
+  table.st { width:100%; border-collapse:collapse; font-size:.82rem; margin-bottom:16px; }
+  table.st td { padding:9px 12px; border-bottom:1px solid var(--border); }
+  table.st td:last-child { text-align:right; font-family:'Space Mono',monospace; font-weight:700; }
+  table.st .cat { color:var(--muted); font-size:.74rem; }
+  table.st .sh td { background:var(--surface2); color:var(--muted); font-size:.63rem; text-transform:uppercase; letter-spacing:1px; padding:6px 12px; }
+  .sv-wrap { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:14px 16px; margin-bottom:20px; }
+  .sv-row { display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; }
+  .sv-row .sl { font-size:.77rem; font-weight:700; }
+  .sv-row .sv { font-family:'Space Mono',monospace; font-size:.8rem; }
+  .sv-track { height:8px; background:var(--surface2); border-radius:99px; overflow:hidden; }
+  .sv-fill { height:100%; border-radius:99px; background:linear-gradient(90deg,var(--accent4),var(--accent)); transition:width .4s; }
+
+  .save-btn { display:block; width:100%; padding:13px; border-radius:12px; background:linear-gradient(135deg,var(--accent),var(--accent4)); color:#000; font-family:'Syne',sans-serif; font-size:.93rem; font-weight:800; border:none; cursor:pointer; letter-spacing:1px; transition:transform .15s,opacity .15s; }
+  .save-btn:active { transform:scale(.98); opacity:.9; }
+  .toast { position:fixed; bottom:24px; left:50%; transform:translateX(-50%) translateY(80px); background:var(--accent); color:#000; font-weight:700; font-family:'Space Mono',monospace; font-size:.78rem; padding:10px 22px; border-radius:99px; transition:transform .3s; z-index:999; }
+  .toast.show { transform:translateX(-50%) translateY(0); }
+
+  @media(max-width:500px){
+    .balance-bar { grid-template-columns:1fr 1fr; }
+    .bc.rest { grid-column:span 2; }
+    .wk-grid { grid-template-columns:repeat(2,1fr); }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>💸 Financial Tracker</h1>
+  <p>Input harian · Centang tagihan · Pantau saldo</p>
+</div>
+
+<div class="month-bar">
+  <label>Bulan:</label>
+  <select id="monthSel"></select>
+  <input type="number" id="yearSel" min="2020" max="2040" style="width:74px">
+</div>
+
+<div class="balance-bar">
+  <div class="bc income">
+    <div class="lbl">💰 Gaji / Saldo</div>
+    <input class="income-in" type="number" id="incomeInput" value="5000000" oninput="onIncomeChange()">
+  </div>
+  <div class="bc spent">
+    <div class="lbl">💸 Total Keluar</div>
+    <div class="amt" id="totalSpent">Rp 0</div>
+  </div>
+  <div class="bc rest">
+    <div class="lbl">🏦 Sisa Saldo</div>
+    <div class="amt" id="restBal">Rp 0</div>
+  </div>
+</div>
+
+<div class="prog-wrap">
+  <div class="prog-lbl"><span>Budget Terpakai</span><span id="progPct">0%</span></div>
+  <div class="prog-track"><div class="prog-fill" id="progFill" style="width:0%"></div></div>
+</div>
+
+<div class="tabs">
+  <button class="tab-btn active" onclick="showTab('daily',this)">📅 Harian</button>
+  <button class="tab-btn" onclick="showTab('fixed',this)">📌 Fixed</button>
+  <button class="tab-btn" onclick="showTab('bensin',this)">⛽ Bensin</button>
+  <button class="tab-btn" onclick="showTab('summary',this)">📊 Ringkasan</button>
+</div>
+
+<!-- HARIAN -->
+<div id="tab-daily">
+  <div class="sec-title">Pengeluaran Harian</div>
+  <div class="tbl-wrap">
+    <table class="dt">
+      <thead>
+        <tr>
+          <th>Tgl</th><th>Makan (Rp)</th><th>Jajan (Rp)</th><th>Lain (Rp)</th>
+          <th>Total</th><th>Sisa Budget</th><th></th>
+        </tr>
+      </thead>
+      <tbody id="dailyBody"></tbody>
+    </table>
+  </div>
+  <div class="sec-title">Per Minggu</div>
+  <div class="wk-grid" id="wkGrid"></div>
+</div>
+
+<!-- FIXED -->
+<div id="tab-fixed" style="display:none">
+  <div class="sec-title">Biaya Tetap Bulanan</div>
+  <div class="fc-list" id="fcList"></div>
+  <div class="insight">
+    <div class="it">⚡ Status Tagihan</div>
+    <div id="fcInsight"></div>
+  </div>
+</div>
+
+<!-- BENSIN -->
+<div id="tab-bensin" style="display:none">
+  <div class="sec-title">Rincian Pengeluaran Bensin</div>
+  <div class="bs-wrap">
+    <div class="bs-head">
+      <div>
+        <div class="bht">⛽ Bensin Bulan Ini</div>
+        <div class="bhs">Budget: Rp 400.000 / bulan</div>
+      </div>
+      <div style="text-align:right">
+        <div style="font-size:.63rem;color:var(--muted);margin-bottom:2px">Total Terpakai</div>
+        <div class="bhtot" id="bsTotal">Rp 0</div>
+      </div>
+    </div>
+    <table class="bt">
+      <thead>
+        <tr><th>Tanggal</th><th>Keterangan</th><th style="text-align:right">Jumlah (Rp)</th><th></th></tr>
+      </thead>
+      <tbody id="bsBody"></tbody>
+    </table>
+    <button class="btn-add" onclick="addBensin()">＋ Tambah Pembelian</button>
+    <div class="bs-bar-wrap">
+      <div class="bs-bar-lbl"><span>Penggunaan Budget</span><span id="bsPct">0%</span></div>
+      <div class="bs-bar-track"><div class="bs-bar-fill" id="bsFill" style="width:0%"></div></div>
+    </div>
+  </div>
+  <div class="insight">
+    <div class="it">💡 Info Bensin</div>
+    <div id="bsInsight"></div>
+  </div>
+</div>
+
+<!-- RINGKASAN -->
+<div id="tab-summary" style="display:none">
+  <div class="sec-title">Monthly Overview</div>
+  <table class="st" id="stTable"></table>
+  <div class="sv-wrap">
+    <div class="sv-row"><div class="sl">🎯 Target Tabungan</div><div class="sv" style="color:var(--accent4)">Rp 1.200.000</div></div>
+    <div class="sv-row" style="margin-bottom:10px"><div class="sl" style="color:var(--muted);font-size:.71rem">Sisa aktual bulan ini</div><div class="sv" id="actualSv">Rp 0</div></div>
+    <div class="sv-track"><div class="sv-fill" id="svFill" style="width:0%"></div></div>
+  </div>
+  <div class="insight">
+    <div class="it">💡 Insight Bulan Ini</div>
+    <div id="sumInsight"></div>
+  </div>
+</div>
+
+<br>
+<button class="save-btn" onclick="saveData()">💾 Simpan Data Bulan Ini</button>
+<div class="toast" id="toast">✅ Data tersimpan!</div>
+
+<script>
+const FIXED = [
+  { id:'kos',     name:'Kos / Kontrakan', amount:1200000, icon:'🏠' },
+  { id:'wifi',    name:'WiFi',             amount:67000,   icon:'📶' },
+  { id:'cicilan', name:'Cicilan',          amount:600000,  icon:'💳' },
+];
+const BS_BUDGET = 400000;
+const DAYS = ['Min','Sen','Sel','Rab','Kam','Jum','Sab'];
+const MONTHS = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+
+let state = {};
+
+function getKey() {
+  return `${document.getElementById('yearSel').value}-${String(+document.getElementById('monthSel').value+1).padStart(2,'0')}`;
+}
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzydAXDiJeQif5vsL5sCD1ouJv0IaTPHStflbySd9wbCfbfY7PpGckgmEsNdL20daiwiw/exec';
+
+function loadState() {
+  try { state = JSON.parse(localStorage.getItem('ft3')||'{}'); }
+  catch { state={}; }
+}
+
+function saveStateLocal() {
+  localStorage.setItem('ft3', JSON.stringify(state));
+}
+
+function setCloudStatus(msg, ok=false) {
+  const el = document.getElementById('cloudStatus');
+  if (el) {
+    el.textContent = msg;
+    el.style.color = ok ? 'var(--accent)' : 'var(--muted)';
+  }
+}
+
+let saveTimer = null;
+function queueCloudSave() {
+  saveStateLocal();
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => cloudSaveCurrentMonth(), 800);
+}
+
+async function cloudSaveCurrentMonth() {
+  if (!APPS_SCRIPT_URL) {
+    setCloudStatus('☁️ Local mode — cloud sync belum dikonfigurasi');
+    return;
+  }
+  const k = getKey();
+  try {
+    setCloudStatus('☁️ Menyimpan...');
+    const res = await fetch(APPS_SCRIPT_URL, {
+      method: 'POST',
+      mode: 'cors',
+      headers: {'Content-Type':'text/plain;charset=utf-8'},
+      body: JSON.stringify({action:'save', key:k, data:state[k]})
+    });
+    const out = await res.json();
+    if (!out.ok) throw new Error(out.error || 'Save failed');
+    setCloudStatus('☁️ Tersimpan ke Google Sheets', true);
+  } catch (err) {
+    console.error(err);
+    setCloudStatus('⚠️ Cloud gagal — data tetap tersimpan di perangkat');
+  }
+}
+
+async function cloudLoadCurrentMonth() {
+  if (!APPS_SCRIPT_URL) return;
+  const k = getKey();
+  try {
+    setCloudStatus('☁️ Mengambil data...');
+    const res = await fetch(APPS_SCRIPT_URL + '?action=load&key=' + encodeURIComponent(k), {
+      method:'GET', mode:'cors'
+    });
+    const out = await res.json();
+    if (out.ok && out.data) {
+      state[k] = out.data;
+      saveStateLocal();
+      setCloudStatus('☁️ Data dimuat dari Google Sheets', true);
+    } else {
+      setCloudStatus('☁️ Belum ada data cloud untuk bulan ini');
+    }
+  } catch (err) {
+    console.error(err);
+    setCloudStatus('⚠️ Cloud tidak dapat diakses — memakai data lokal');
+  }
+}
+
+function ensureMonth() {
+  const k = getKey();
+  if (!state[k]) {
+    const y = +document.getElementById('yearSel').value;
+    const m = +document.getElementById('monthSel').value;
+    state[k] = {
+      income: 5000000,
+      days: Array.from({length: new Date(y,m+1,0).getDate()}, ()=>({makan:'',jajan:'',lain:''})),
+      fixed: {kos:false, wifi:false, cicilan:false},
+      bensin: [],
+    };
+  }
+  if (!state[k].bensin) state[k].bensin = [];
+  return state[k];
+}
+
+function initMonthSelect() {
+  const sel = document.getElementById('monthSel');
+  sel.innerHTML = MONTHS.map((m,i)=>`<option value="${i}">${m}</option>`).join('');
+  const now = new Date();
+  sel.value = now.getMonth();
+  document.getElementById('yearSel').value = now.getFullYear();
+}
+
+function init() {
+  loadState();
+  initMonthSelect();
+  renderAll();
+  cloudLoadCurrentMonth().then(() => renderAll());
+  document.getElementById('monthSel').addEventListener('change', () => {
+    renderAll();
+    cloudLoadCurrentMonth().then(() => renderAll());
+  });
+  document.getElementById('yearSel').addEventListener('change', () => {
+    renderAll();
+    cloudLoadCurrentMonth().then(() => renderAll());
+  });
+}
+
+function renderAll() {
+  const d = ensureMonth();
+  document.getElementById('incomeInput').value = d.income;
+  renderDaily(d);
+  renderFixed(d);
+  renderBensin(d);
+  recalc();
+}
+
+// ── DAILY ──────────────────────────────────────────────────
+function bgt(y, m, i) {
+  const dow = new Date(y, m, i+1).getDay();
+  return (dow===0||dow===6) ? 70000 : 15000;
+}
+
+function renderDaily(d) {
+  const y = +document.getElementById('yearSel').value;
+  const m = +document.getElementById('monthSel').value;
+  const today = new Date();
+  const tbody = document.getElementById('dailyBody');
+  tbody.innerHTML = '';
+
+  d.days.forEach((row, i) => {
+    const date = new Date(y, m, i+1);
+    const dow = date.getDay();
+    const isWE = dow===0||dow===6;
+    const isTD = date.toDateString()===today.toDateString();
+    const budget = bgt(y, m, i);
+
+    const tr = document.createElement('tr');
+    if (isWE) tr.classList.add('we');
+    if (isTD) tr.classList.add('td');
+    tr.dataset.idx = i;
+    tr.dataset.budget = budget;
+
+    tr.innerHTML = `
+      <td>
+        <div class="dlbl">${i+1}</div>
+        <div class="dname">${DAYS[dow]}${isWE?' <span class="we-tag">WE</span>':''}</div>
+      </td>
+      <td><input class="ni" type="number" placeholder="0" min="0" value="${row.makan||''}" data-f="makan"></td>
+      <td><input class="ni" type="number" placeholder="0" min="0" value="${row.jajan||''}" data-f="jajan"></td>
+      <td><input class="ni" type="number" placeholder="0" min="0" value="${row.lain||''}"  data-f="lain"></td>
+      <td class="rt em">—</td>
+      <td class="sc">—</td>
+      <td><span class="dot x"></span></td>
+    `;
+    tbody.appendChild(tr);
+
+    // Compute initial state for this row
+    refreshRow(tr, row, budget);
+
+    // Attach listeners
+    tr.querySelectorAll('input.ni').forEach(inp => {
+      inp.addEventListener('input', function() {
+        const d2 = ensureMonth();
+        d2.days[i][this.dataset.f] = this.value;
+        refreshRow(tr, d2.days[i], budget);
+        recalc();
+        queueCloudSave();
+      });
+    });
+  });
+
+  renderWeek(d);
+}
+
+function refreshRow(tr, row, budget) {
+  const makan = parseFloat(row.makan)||0;
+  const jajan = parseFloat(row.jajan)||0;
+  const lain  = parseFloat(row.lain )||0;
+  const total = makan+jajan+lain;
+  const hasData = total > 0;
+  const sisa = hasData ? budget - total : null;
+
+  const tcell = tr.cells[4];
+  const scell = tr.cells[5];
+  const dot   = tr.cells[6].querySelector('.dot');
+
+  tcell.textContent = hasData ? fmt(total) : '—';
+  tcell.className   = 'rt '+ (!hasData?'em': total>budget?'over':'ok');
+
+  scell.textContent = sisa===null ? '—' : (sisa>=0?'+':'')+fmtN(sisa);
+  scell.className   = 'sc '+(sisa===null?'': sisa>=0?'pos':'neg');
+
+  dot.className = 'dot '+(!hasData?'x': sisa>=0?'g':'r');
+}
+
+function renderWeek(d) {
+  const weeks=[[],[],[],[]];
+  d.days.forEach((r,i)=>{ weeks[Math.min(3,Math.floor(i/7))].push(r); });
+  document.getElementById('wkGrid').innerHTML = weeks.map((wk,wi)=>{
+    const t = wk.reduce((a,r)=>a+(parseFloat(r.makan)||0)+(parseFloat(r.jajan)||0)+(parseFloat(r.lain)||0),0);
+    return `<div class="wk-card">
+      <div class="wl">Minggu ${wi+1}</div>
+      <div class="wt">${t>0?fmt(t):'—'}</div>
+      <div class="wf">🎉 Fun: Rp 100rb</div>
+    </div>`;
+  }).join('');
+}
+
+// ── FIXED ──────────────────────────────────────────────────
+function renderFixed(d) {
+  document.getElementById('fcList').innerHTML = FIXED.map(fc=>{
+    const paid = !!d.fixed[fc.id];
+    return `<div class="fc-row${paid?' paid':''}" onclick="toggleFC('${fc.id}')">
+      <div class="ck">${paid?'✓':''}</div>
+      <div class="fc-name">${fc.icon} ${fc.name}</div>
+      <div class="fc-amt">${fmt(fc.amount)}</div>
+      <div class="fc-badge">${paid?'LUNAS ✓':'Belum'}</div>
+    </div>`;
+  }).join('');
+
+  const total = FIXED.reduce((a,fc)=>a+fc.amount,0);
+  const paidT = FIXED.filter(fc=>d.fixed[fc.id]).reduce((a,fc)=>a+fc.amount,0);
+  document.getElementById('fcInsight').innerHTML =
+    FIXED.map(fc=>{
+      const p = !!d.fixed[fc.id];
+      return `<div class="ii"><span>${p?'✅':'⏳'}</span><span>${fc.icon} ${fc.name} — ${fmt(fc.amount)} — <strong style="color:${p?'var(--accent)':'var(--yellow)'}">${p?'Sudah dibayar':'Belum dibayar'}</strong></span></div>`;
+    }).join('') +
+    `<div class="ii" style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border)">
+      <span>📊</span><span>Terbayar: <strong style="color:var(--accent)">${fmt(paidT)}</strong> dari ${fmt(total)}</span>
+    </div>`;
+}
+
+function toggleFC(id) {
+  const d = ensureMonth();
+  d.fixed[id] = !d.fixed[id];
+  renderFixed(d);
+  recalc();
+  queueCloudSave();
+}
+
+// ── BENSIN ─────────────────────────────────────────────────
+function renderBensin(d) {
+  const tbody = document.getElementById('bsBody');
+  tbody.innerHTML = '';
+  (d.bensin||[]).forEach((row,i) => appendBsRow(tbody, i, row));
+  updateBsTotals(d);
+}
+
+function appendBsRow(tbody, i, row) {
+  const tr = document.createElement('tr');
+  tr.innerHTML = `
+    <td><input class="bti" type="date" value="${row.tanggal||''}" data-i="${i}" data-f="tanggal"></td>
+    <td><input class="bti" type="text" placeholder="misal: Full tank Pertamax" value="${row.ket||''}" data-i="${i}" data-f="ket"></td>
+    <td><input class="bti" type="number" placeholder="0" min="0" value="${row.jumlah||''}" data-i="${i}" data-f="jumlah" style="text-align:right;min-width:100px"></td>
+    <td><button class="btn-del" data-i="${i}" title="Hapus">✕</button></td>
+  `;
+  tbody.appendChild(tr);
+
+  tr.querySelectorAll('.bti').forEach(inp => {
+    inp.addEventListener('input', function() {
+      const d2 = ensureMonth();
+      if (!d2.bensin[+this.dataset.i]) return;
+      d2.bensin[+this.dataset.i][this.dataset.f] = this.value;
+      updateBsTotals(d2);
+      recalc();
+      queueCloudSave();
+    });
+    inp.addEventListener('change', function() {
+      const d2 = ensureMonth();
+      if (!d2.bensin[+this.dataset.i]) return;
+      d2.bensin[+this.dataset.i][this.dataset.f] = this.value;
+      updateBsTotals(d2);
+      recalc();
+      queueCloudSave();
+    });
+  });
+  tr.querySelector('.btn-del').addEventListener('click', function() {
+    const d2 = ensureMonth();
+    d2.bensin.splice(+this.dataset.i, 1);
+    renderBensin(d2);
+    recalc();
+    queueCloudSave();
+  });
+}
+
+function addBensin() {
+  const d = ensureMonth();
+  const today = new Date().toISOString().slice(0,10);
+  d.bensin.push({tanggal:today, ket:'', jumlah:''});
+  const tbody = document.getElementById('bsBody');
+  appendBsRow(tbody, d.bensin.length-1, d.bensin[d.bensin.length-1]);
+  updateBsTotals(d);
+  recalc();
+  queueCloudSave();
+}
+
+function updateBsTotals(d) {
+  const total = (d.bensin||[]).reduce((a,r)=>a+(parseFloat(r.jumlah)||0),0);
+  const pct   = Math.min(100, Math.round(total/BS_BUDGET*100));
+  const sisa  = BS_BUDGET - total;
+  document.getElementById('bsTotal').textContent = fmt(total);
+  document.getElementById('bsTotal').style.color = total > BS_BUDGET ? 'var(--red)' : 'var(--accent3)';
+  document.getElementById('bsPct').textContent = pct+'%';
+  document.getElementById('bsFill').style.width = pct+'%';
+  document.getElementById('bsInsight').innerHTML = [
+    `<div class="ii"><span>${total<=BS_BUDGET?'✅':'⚠️'}</span><span>Terpakai: <strong style="color:var(--accent3)">${fmt(total)}</strong> dari budget ${fmt(BS_BUDGET)}</span></div>`,
+    `<div class="ii"><span>💡</span><span>Sisa budget: <strong style="color:${sisa>=0?'var(--accent)':'var(--red)'}">${fmt(Math.abs(sisa))}${sisa<0?' (OVER!!)':''}</strong></span></div>`,
+    `<div class="ii"><span>📝</span><span>Jumlah transaksi: <strong>${(d.bensin||[]).length}x</strong></span></div>`,
+  ].join('');
+}
+
+// ── RECALC ─────────────────────────────────────────────────
+function recalc() {
+  const d = ensureMonth();
+  const dailyT  = d.days.reduce((a,r)=>a+(parseFloat(r.makan)||0)+(parseFloat(r.jajan)||0)+(parseFloat(r.lain)||0),0);
+  const fixedT  = FIXED.reduce((a,fc)=>a+fc.amount,0);
+  const bensinT = (d.bensin||[]).reduce((a,r)=>a+(parseFloat(r.jumlah)||0),0);
+  const funT    = 400000;
+  const totalOut = dailyT + fixedT + bensinT + funT;
+  const rest     = d.income - totalOut;
+  const pct      = Math.min(100, Math.round(totalOut/d.income*100));
+
+  document.getElementById('totalSpent').textContent = fmt(totalOut);
+  document.getElementById('restBal').textContent = fmt(rest);
+  document.getElementById('restBal').style.color = rest>=0 ? 'var(--yellow)' : 'var(--red)';
+  document.getElementById('progPct').textContent = pct+'%';
+  const fill = document.getElementById('progFill');
+  fill.style.width = pct+'%';
+  fill.className = 'prog-fill'+(pct>80?' danger':'');
+
+  renderWeek(d);
+  renderSummary(d, dailyT, fixedT, bensinT, funT, totalOut, rest);
+}
+
+function onIncomeChange() {
+  const d = ensureMonth();
+  d.income = parseFloat(document.getElementById('incomeInput').value)||5000000;
+  recalc();
+  queueCloudSave();
+}
+
+// ── SUMMARY ────────────────────────────────────────────────
+function renderSummary(d, dailyT, fixedT, bensinT, funT, totalOut, rest) {
+  const target = 1200000;
+  const svPct  = Math.min(100, Math.max(0, Math.round(rest/target*100)));
+
+  document.getElementById('stTable').innerHTML = `
+    <tr class="sh"><td colspan="2">📥 Pemasukan</td></tr>
+    <tr><td class="cat">Gaji / Saldo Awal</td><td style="color:var(--accent)">${fmt(d.income)}</td></tr>
+    <tr class="sh"><td colspan="2">📌 Biaya Tetap</td></tr>
+    ${FIXED.map(fc=>`<tr><td class="cat">${fc.icon} ${fc.name}</td><td style="color:var(--red)">(${fmt(fc.amount)})</td></tr>`).join('')}
+    <tr><td class="cat">⛽ Bensin (aktual)</td><td style="color:var(--red)">(${fmt(bensinT)})</td></tr>
+    <tr><td class="cat" style="font-weight:700">Subtotal Fixed</td><td style="color:var(--red);font-weight:700">(${fmt(fixedT+bensinT)})</td></tr>
+    <tr class="sh"><td colspan="2">🍽️ Pengeluaran Harian</td></tr>
+    <tr><td class="cat">Total Harian (makan+jajan+lain)</td><td style="color:var(--red)">(${fmt(dailyT)})</td></tr>
+    <tr class="sh"><td colspan="2">🎉 Fun & Reward</td></tr>
+    <tr><td class="cat">Fun Reward (4 minggu × Rp 100rb)</td><td style="color:var(--accent3)">(${fmt(funT)})</td></tr>
+    <tr class="sh"><td colspan="2">📊 Hasil Akhir</td></tr>
+    <tr><td style="font-weight:700">Total Pengeluaran</td><td style="color:var(--red);font-weight:700">(${fmt(totalOut)})</td></tr>
+    <tr><td style="font-weight:800;font-size:.94rem">💰 Sisa / Tabungan</td><td style="color:${rest>=0?'var(--accent)':'var(--red)'};font-weight:800;font-size:.94rem">${fmt(rest)}</td></tr>
+  `;
+
+  document.getElementById('actualSv').textContent = fmt(rest);
+  document.getElementById('actualSv').style.color = rest>=target?'var(--accent)': rest>=0?'var(--yellow)':'var(--red)';
+  document.getElementById('svFill').style.width = svPct+'%';
+
+  const paidCnt = FIXED.filter(fc=>d.fixed[fc.id]).length;
+  const filledD = d.days.filter(r=>(parseFloat(r.makan)||0)+(parseFloat(r.jajan)||0)+(parseFloat(r.lain)||0)>0).length;
+  const bsCnt   = (d.bensin||[]).length;
+
+  let items = [];
+  if (rest >= target) items.push(`<div class="ii">✅ Tabungan melebihi target! Surplus <strong style="color:var(--accent)">${fmt(rest-target)}</strong></div>`);
+  else if (rest >= 0) items.push(`<div class="ii">⚠️ Kurang <strong style="color:var(--yellow)">${fmt(target-rest)}</strong> dari target Rp 1,2jt</div>`);
+  else items.push(`<div class="ii">🚨 Over! Minus: <strong style="color:var(--red)">${fmt(Math.abs(rest))}</strong></div>`);
+  items.push(`<div class="ii"><span>📌</span><span>Fixed terbayar: <strong>${paidCnt}/${FIXED.length}</strong></span></div>`);
+  items.push(`<div class="ii"><span>📅</span><span>Hari diisi: <strong>${filledD}/${d.days.length}</strong> hari</span></div>`);
+  items.push(`<div class="ii"><span>⛽</span><span>Bensin: <strong>${bsCnt}x transaksi</strong>, total ${fmt(bensinT)}</span></div>`);
+  document.getElementById('sumInsight').innerHTML = items.join('');
+}
+
+// ── TABS & SAVE ────────────────────────────────────────────
+function showTab(tab, btn) {
+  ['daily','fixed','bensin','summary'].forEach(t=>{
+    document.getElementById('tab-'+t).style.display='none';
+  });
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tab-'+tab).style.display='block';
+  btn.classList.add('active');
+}
+
+async function saveData() {
+  saveStateLocal();
+  await cloudSaveCurrentMonth();
+  const t = document.getElementById('toast');
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 2000);
+}
+
+// ── FORMAT ─────────────────────────────────────────────────
+function fmtN(n) { return 'Rp '+Math.abs(Math.round(n)).toLocaleString('id-ID'); }
+function fmt(n) {
+  if (n===null||n===undefined) return '—';
+  const s = 'Rp '+Math.abs(Math.round(n)).toLocaleString('id-ID');
+  return n<0 ? `(${s})` : s;
+}
+
+init();
+</script>
+
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./service-worker.js').catch(err => {
+      console.warn('Service Worker registration failed:', err);
+    });
+  });
+}
+</script>
+
+</body>
+</html>
